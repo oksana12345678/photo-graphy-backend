@@ -5,7 +5,6 @@ export const createBookingRequestController = async (req, res) => {
     const booking = await createBookingRequest({ ...req.body });
 
     res.status(201).json({
-      success: true,
       message: 'Бронювання успішно створено',
       data: booking,
     });
@@ -13,7 +12,6 @@ export const createBookingRequestController = async (req, res) => {
     console.error('Booking error:', error);
 
     res.status(500).json({
-      success: false,
       message: 'Помилка при створенні бронювання',
       error: error.message || error,
     });
