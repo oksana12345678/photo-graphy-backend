@@ -7,3 +7,6 @@ export const createBookingRequest = (bookingData) => {
 export const getAllBookings = () => {
   return BookingModel.find();
 };
+
+export const getBookingByEmail = (email) => BookingModel.findOne({ email });
+
