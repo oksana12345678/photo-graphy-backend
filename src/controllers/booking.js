@@ -78,8 +78,7 @@ export const getBookedCalendarController = async (req, res) => {
           time: hoursWithStatus,
         };
       })
-      .filter((schedule) => schedule.time.some((t) => !t.booked)); // залишаємо тільки ті дні, де є вільні години
-
+      .filter((schedule) => schedule.time.some((t) => !t.booked)); 
     res.status(200).json({
       data: updatedSchedule,
     });

@@ -14,6 +14,7 @@ const setupServer = () => {
   const allowedOrigins = [
     'https://photo-gallery-react-iota.vercel.app',
     'http://localhost:5173',
+    'https://634hq74p-5174.euw.devtunnels.ms',
   ];
 
   const corsOptions = {
