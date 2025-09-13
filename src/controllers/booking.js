@@ -28,57 +28,78 @@ export const createBookingRequestController = async (req, res) => {
 };
 
 export const getAllBookingsController = async (req, res) => {
-  try {
-    const bookings = await getAllBookings();
+  const bookings = await getAllBookings();
 
-    res.status(200).json({
-      success: true,
-      data: bookings,
-    });
-  } catch (error) {
-    console.error('Get bookings error:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Помилка при отриманні бронювань',
-      error: error.message || error,
-    });
-  }
+  res.status(200).json({
+    success: true,
+    data: bookings,
+  });
 };
 
 export const getBookedCalendarController = async (req, res) => {
+  console.log(req.query);
   try {
     const booked = await getAllBookings();
     const scheduledDates = await getAllSchedules();
 
+    const serviceDuration = req.query.time ? parseInt(req.query.time, 10) : 60;
+
     const bookedSlots = booked.map((item) => ({
       date: dayjs(item.sessionDate).format('YYYY-MM-DD'),
-      time: item.time,
+      startTime: item.time,
+      duration: serviceDuration,
       user: { name: item.name, email: item.email, phone: item.phone },
     }));
 
-    const updatedSchedule = scheduledDates
-      .map((schedule) => {
-        const scheduleDate = dayjs(schedule.date).format('YYYY-MM-DD');
+    const updatedSchedule = scheduledDates.map((schedule) => {
+      const scheduleDate = dayjs(schedule.date).format('YYYY-MM-DD');
 
-        const bookedForDate = bookedSlots.filter(
-          (b) => b.date === scheduleDate,
-        );
+      // генеруємо слоти між time_from і time_to
+      const slots = [];
+      let current = dayjs(
+        `${scheduleDate} ${schedule.time_from}`,
+        'YYYY-MM-DD HH:mm',
+      );
+      const end = dayjs(
+        `${scheduleDate} ${schedule.time_to}`,
+        'YYYY-MM-DD HH:mm',
+      );
 
-        const hoursWithStatus = schedule.time.map((hour) => {
-          const bookedHour = bookedForDate.find((b) => b.time === hour);
+      while (current.isBefore(end)) {
+        slots.push(current.format('HH:mm'));
+        current = current.add(serviceDuration, 'minute');
+      }
 
-          return bookedHour
-            ? { hour, booked: true, user: bookedHour.user }
-            : { hour, booked: false };
+      // позначаємо заброньовані
+      const hoursWithStatus = slots.map((slot) => {
+        let isBooked = false;
+        let bookedUser = null;
+
+        bookedSlots.forEach((b) => {
+          const start = dayjs(`${b.date} ${b.startTime}`, 'YYYY-MM-DD HH:mm');
+          const end = start.add(b.duration, 'minute');
+          const current = dayjs(`${b.date} ${slot}`, 'YYYY-MM-DD HH:mm');
+
+          if (
+            current.isSame(start) ||
+            (current.isAfter(start) && current.isBefore(end))
+          ) {
+            isBooked = true;
+            bookedUser = b.user;
+          }
         });
 
-        return {
-          ...schedule._doc,
-          time: hoursWithStatus,
-        };
-      })
-      .filter((schedule) => schedule.time.some((t) => !t.booked)); 
+        return isBooked
+          ? { hour: slot, booked: true, user: bookedUser }
+          : { hour: slot, booked: false };
+      });
+
+      return {
+        ...schedule._doc,
+        time: hoursWithStatus,
+      };
+    });
+
     res.status(200).json({
       data: updatedSchedule,
     });

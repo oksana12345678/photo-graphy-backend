@@ -7,7 +7,8 @@ const ScheduleSchema = new Schema(
       required: true,
       unique: true,
     },
-    time: { type: Array, default: [] },
+    time_from: { type: String, default: '' },
+    time_to: { type: String, default: '' },
   },
   {
     timestamps: true,
